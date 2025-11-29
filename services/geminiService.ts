@@ -3,12 +3,14 @@ import { UserPreferences, TravelItinerary, Activity, Event } from "../types";
 import { MAX_RETRIES, INITIAL_RETRY_DELAY } from "../constants";
 import { ApiError, isQuotaError, isServerError } from "../utils/errorHandling";
 
-// Support both Vite env vars (VITE_ prefix) and process.env (for Vercel/build-time)
-// Check in order: Vite env var, then process.env fallbacks
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 
-               (typeof process !== 'undefined' && process.env?.API_KEY) || 
-               (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
-               undefined;
+// Get API key from Vite's injected environment variable
+// This is set by vite.config.ts's define option
+const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY || 
+                  (typeof process !== 'undefined' && process.env?.API_KEY) || 
+                  (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
+                  '';
+// Trim whitespace in case there's any
+const apiKey = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
 
 // Helper to reliably extract JSON from markdown or text chatter
 const cleanAndParseJson = (text: string, isArray: boolean = false): unknown => {
@@ -269,8 +271,13 @@ export const generateItinerary = async (prefs: UserPreferences): Promise<TravelI
     
     // Check for specific API errors
     const err = error as { message?: string; status?: number; code?: string };
-    if (err.message?.includes('API key') || err.message?.includes('authentication') || err.message?.includes('401')) {
-      throw new ApiError("Invalid API key. Please check your GEMINI_API_KEY in .env.local", 401, "INVALID_API_KEY");
+    if (err.message?.includes('API key') || err.message?.includes('authentication') || err.message?.includes('401') || err.status === 401) {
+      const keyPreview = apiKey ? apiKey.substring(0, 10) + '...' : 'not found';
+      throw new ApiError(
+        `Invalid API key detected (${keyPreview}). This key may have been revoked. Please:\n1. Check your GEMINI_API_KEY in .env.local\n2. If it was exposed in git, generate a new key at https://aistudio.google.com/apikey\n3. Update .env.local and restart the server`,
+        401,
+        "INVALID_API_KEY"
+      );
     }
     if (err.message?.includes('model') || err.message?.includes('not found') || err.message?.includes('404')) {
       throw new ApiError("Model not available. Please check the model name.", 404, "MODEL_NOT_FOUND");
