@@ -4,7 +4,11 @@ import { MAX_RETRIES, INITIAL_RETRY_DELAY } from "../constants";
 import { ApiError, isQuotaError, isServerError } from "../utils/errorHandling";
 
 // Support both Vite env vars (VITE_ prefix) and process.env (for Vercel/build-time)
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
+// Check in order: Vite env var, then process.env fallbacks
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 
+               (typeof process !== 'undefined' && process.env?.API_KEY) || 
+               (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
+               undefined;
 
 // Helper to reliably extract JSON from markdown or text chatter
 const cleanAndParseJson = (text: string, isArray: boolean = false): unknown => {
@@ -97,9 +101,19 @@ const generateWithRetry = async (
 };
 
 export const generateItinerary = async (prefs: UserPreferences): Promise<TravelItinerary> => {
+  // Debug: Log what we're getting (without exposing the full key)
   if (!apiKey) {
-    throw new ApiError("API_KEY is missing in environment variables. Please set GEMINI_API_KEY in .env.local", 500, "MISSING_API_KEY");
+    console.error('API Key check:', {
+      hasViteEnv: !!import.meta.env.VITE_GEMINI_API_KEY,
+      hasProcessApiKey: typeof process !== 'undefined' && !!process.env?.API_KEY,
+      hasProcessGeminiKey: typeof process !== 'undefined' && !!process.env?.GEMINI_API_KEY,
+      viteEnvPreview: import.meta.env.VITE_GEMINI_API_KEY?.substring(0, 10) + '...',
+    });
+    throw new ApiError("API_KEY is missing in environment variables. Please set GEMINI_API_KEY in Vercel Environment Variables or .env.local", 500, "MISSING_API_KEY");
   }
+  
+  // Log partial key for debugging (first 10 chars only)
+  console.log('Using API key:', apiKey.substring(0, 10) + '...');
 
   console.log('Starting itinerary generation for:', prefs.destinationCity);
   const startTime = Date.now();
