@@ -22,7 +22,8 @@ import {
   LinkIcon,
   CarIcon,
   UsersIcon,
-  UserIcon
+  UserIcon,
+  TrashIcon
 } from './ui/Icons';
 
 interface ItineraryDisplayProps {
@@ -230,6 +231,16 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
     setShowAddForm(null);
   };
 
+  const deleteActivity = (dayNumber: number, activityIndex: number) => {
+    const newItinerary = { ...itinerary };
+    const day = newItinerary.dailyItinerary.find(d => d.dayNumber === dayNumber);
+    if (day && day.activities[activityIndex]) {
+      day.activities.splice(activityIndex, 1);
+      setItinerary(newItinerary);
+      if (onItineraryChange) onItineraryChange(newItinerary);
+    }
+  };
+
   const addPackingItem = () => {
      if (!newPackingItem.trim()) return;
      const updatedList = [...packingList, newPackingItem.trim()];
@@ -365,15 +376,23 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
                                         </div>
                                         
                                         <div className="flex-1">
-                                            <div className="mb-2">
+                                            <div className="mb-2 flex items-start justify-between gap-2">
                                                 <a 
                                                     href={getMapsLink(act.activity, act.location)} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    className="text-lg font-bold text-stone-900 hover:underline decoration-stone-300 underline-offset-4 transition-all"
+                                                    className="text-lg font-bold text-stone-900 hover:underline decoration-stone-300 underline-offset-4 transition-all flex-1"
                                                 >
                                                     {act.activity}
                                                 </a>
+                                                <button
+                                                    onClick={() => deleteActivity(day.dayNumber, idx)}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-600 no-print"
+                                                    title="Delete activity"
+                                                    aria-label="Delete activity"
+                                                >
+                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                </button>
                                             </div>
                                             
                                             <div className="flex items-center gap-3 mb-3">

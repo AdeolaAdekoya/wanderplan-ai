@@ -3,7 +3,8 @@ import { UserPreferences, TravelItinerary, Activity, Event } from "../types";
 import { MAX_RETRIES, INITIAL_RETRY_DELAY } from "../constants";
 import { ApiError, isQuotaError, isServerError } from "../utils/errorHandling";
 
-const apiKey = process.env.API_KEY;
+// Support both Vite env vars (VITE_ prefix) and process.env (for Vercel/build-time)
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
 
 // Helper to reliably extract JSON from markdown or text chatter
 const cleanAndParseJson = (text: string, isArray: boolean = false): unknown => {
