@@ -33,6 +33,7 @@ interface ItineraryDisplayProps {
   interests: string[];
   travelParty?: UserProfile[]; 
   onItineraryChange?: (updated: TravelItinerary) => void;
+  invitedEmails?: string[];
 }
 
 
@@ -42,7 +43,8 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
   city, 
   interests, 
   travelParty = [],
-  onItineraryChange
+  onItineraryChange,
+  invitedEmails = []
 }) => {
   // Ensure data has all required fields with defaults
   const safeData: TravelItinerary = {
@@ -105,6 +107,11 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
     let text = `${itinerary.tripName}\n${itinerary.summary}\n\n`;
     text += `Dates: ${itinerary.dailyItinerary[0]?.date || 'Start'} to ${itinerary.dailyItinerary[itinerary.dailyItinerary.length-1]?.date || 'End'}\n\n`;
     
+    // Add a personal note if sharing with invited people
+    if (invitedEmails && invitedEmails.length > 0) {
+      text += `Sharing this travel plan with you! 🗺️\n\n`;
+    }
+    
     itinerary.dailyItinerary.forEach(day => {
         text += `Day ${day.dayNumber}: ${day.theme} (${day.date || ''})\n`;
         text += `--------------------------------\n`;
@@ -150,7 +157,17 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
   const handleEmail = () => {
     const subject = encodeURIComponent(`Travel Plan: ${itinerary.tripName}`);
     const body = encodeURIComponent(formatItineraryText());
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+    
+    // Pre-fill recipients with invited emails if any
+    let mailtoLink = `mailto:`;
+    if (invitedEmails && invitedEmails.length > 0) {
+      const recipients = invitedEmails.join(',');
+      mailtoLink = `mailto:${recipients}?subject=${subject}&body=${body}`;
+    } else {
+      mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+    }
+    
+    window.open(mailtoLink);
     setIsExportOpen(false);
   };
 

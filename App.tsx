@@ -198,6 +198,7 @@ function App() {
         interests={prefs.interests}
         travelParty={travelParty}
         onItineraryChange={handleTripUpdate}
+        invitedEmails={invitedEmails}
       />
     );
   }
